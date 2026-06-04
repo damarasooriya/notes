@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/L Study Notes</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --accent: #38bdf8;
+            --card-bg: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 1rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+        h1 span { color: var(--accent); }
+        
+        /* CSS Grid for the gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .note-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            border: 1px solid #334155;
+        }
+        .note-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+        .note-card img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+        }
+        .note-info {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .note-title {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            word-break: break-all;
+        }
+        .download-btn {
+            background: var(--accent);
+            color: #0f172a;
+            padding: 0.4rem 0.8rem;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .loading {
+            text-align: center;
+            color: #94a3b8;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Study<span>Notes</span></h1>
+        <p>Private A/L Archive</p>
+    </header>
+
+    <div class="gallery" id="gallery">
+        <p class="loading" id="loading-text">Fetching notes from repository...</p>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const USERNAME = 'damarasooriya'; // e.g., 'dhanika-dev'
+        const REPO = 'notes';           // e.g., 'al-notes-gallery'
+        const FOLDER = 'images';
+        // ---------------------
+
+        const gallery = document.getElementById('gallery');
+        const loadingText = document.getElementById('loading-text');
+        const apiUrl = `https://api.github.com/repos/${USERNAME}/${REPO}/contents/${FOLDER}`;
+
+        async function fetchImages() {
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Could not fetch images.');
+                
+                const files = await response.json();
+                
+                // Filter for image files only
+                const images = files.filter(file => 
+                    file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+                );
+
+                loadingText.style.display = 'none';
+
+                if (images.length === 0) {
+                    gallery.innerHTML = '<p class="loading">No notes found. Upload some images to the "images" folder!</p>';
+                    return;
+                }
+
+                images.forEach(image => {
+                    // Create Card
+                    const card = document.createElement('div');
+                    card.className = 'note-card';
+
+                    // Create Image
+                    const img = document.createElement('img');
+                    img.src = image.download_url;
+                    img.alt = image.name;
+                    img.onclick = () => window.open(image.download_url, '_blank'); // View full size on click
+
+                    // Create Info Section
+                    const info = document.createElement('div');
+                    info.className = 'note-info';
+
+                    // Title
+                    const title = document.createElement('span');
+                    title.className = 'note-title';
+                    // Remove file extension for cleaner look
+                    title.innerText = image.name.replace(/\.[^/.]+$/, ""); 
+
+                    // Download Button
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.className = 'download-btn';
+                    downloadBtn.href = image.download_url;
+                    downloadBtn.download = image.name;
+                    downloadBtn.innerText = 'Download';
+                    downloadBtn.target = '_blank';
+
+                    // Assemble
+                    info.appendChild(title);
+                    info.appendChild(downloadBtn);
+                    card.appendChild(img);
+                    card.appendChild(info);
+                    gallery.appendChild(card);
+                });
+
+            } catch (error) {
+                loadingText.innerText = 'Error loading notes. Make sure your repository is public and the config names are correct.';
+                console.error(error);
+            }
+        }
+
+        fetchImages();
+    </script>
+</body>
+</html>
